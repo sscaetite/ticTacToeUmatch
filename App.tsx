@@ -1,15 +1,10 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
 
 export default function App() {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState("X");
+  const [winningCells, setWinningCells] = useState<number[]>([]); // Para armazenar as células vencedoras
 
   const handlePress = (index: number) => {
     if (board[index] || checkWinner()) return;
@@ -20,12 +15,16 @@ export default function App() {
 
     const winner = checkWinner(newBoard);
     if (winner) {
+      const winningCombination = getWinningCombination(newBoard);
+      setWinningCells(winningCombination); // Marcar as células vencedoras
       Alert.alert("Game Over", `${winner} wins!`, [
         { text: "Restart", onPress: resetGame },
+        { text: "OK!" },
       ]);
     } else if (!newBoard.includes(null)) {
       Alert.alert("Game Over", "It's a draw!", [
         { text: "Restart", onPress: resetGame },
+        { text: "OK!" },
       ]);
     } else {
       setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
@@ -57,23 +56,55 @@ export default function App() {
     return null;
   };
 
+  const getWinningCombination = (boardToCheck = board) => {
+    const winningCombinations = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    for (let combination of winningCombinations) {
+      const [a, b, c] = combination;
+      if (
+        boardToCheck[a] &&
+        boardToCheck[a] === boardToCheck[b] &&
+        boardToCheck[a] === boardToCheck[c]
+      ) {
+        return combination;
+      }
+    }
+    return [];
+  };
+
   const resetGame = () => {
     setBoard(Array(9).fill(null));
     setCurrentPlayer("X");
+    setWinningCells([]);
   };
 
-  const renderSquare = (index: number) => (
-    <TouchableOpacity style={styles.square} onPress={() => handlePress(index)}>
-      <Text
-        style={[
-          styles.squareText,
-          board[index] === "X" ? styles.textX : styles.textO,
-        ]}
+  const renderSquare = (index: number) => {
+    const isWinningCell = winningCells.includes(index);
+    return (
+      <TouchableOpacity
+        style={[styles.square, isWinningCell && styles.winningCell]}
+        onPress={() => handlePress(index)}
       >
-        {board[index]}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text
+          style={[
+            styles.squareText,
+            board[index] === "X" ? styles.textX : styles.textO,
+          ]}
+        >
+          {board[index]}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -120,6 +151,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#9A8C98",
     backgroundColor: "#FFF1E6",
+  },
+  winningCell: {
+    backgroundColor: "#FFD700",
   },
   squareText: {
     fontSize: 32,
